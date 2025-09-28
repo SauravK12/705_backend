@@ -1,3 +1,20 @@
+# UI
+
+no backend connection yet
+
+to run:
+
+make sure you're in /client
+
+
+``` bash
+npm install
+
+npm run dev
+```
+
+most ui stuff is from MUI cause ceebs css
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
