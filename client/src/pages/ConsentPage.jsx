@@ -27,7 +27,7 @@ function ConsentPage() {
   return (
     <div className="consent-page">
       <div className="consent-container">
-        <Link to="/" className="back-link">
+        <Link to="/summary" className="back-link">
           ← Back to "About this survey..."
         </Link>
         
@@ -36,19 +36,18 @@ function ConsentPage() {
         <div className="consent-content">
           <div className="terms-section">
             <p className="terms-text">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut 
-              labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco 
-              laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in 
-              voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non 
-              proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+              By participating in this research study, you agree to share information about your mental health 
+              and well-being experiences as a university student. Your participation is entirely voluntary, and 
+              you may withdraw from the study at any time without penalty. All data collected will be kept 
+              strictly confidential and will only be accessible to authorized research personnel.
             </p>
             
             <p className="terms-text">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut 
-              labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco 
-              laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in 
-              voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non 
-              proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+              The information you provide will be used to better understand student mental health patterns and 
+              to inform the development of support services. Your responses will be anonymized and aggregated 
+              with other participants' data for analysis. No individual responses will be identifiable in any 
+              publications or reports resulting from this research. If you have any questions about this study, 
+              please contact the research team using the information provided in your participant materials.
             </p>
           </div>
 
@@ -64,7 +63,7 @@ function ConsentPage() {
               />
               <div className="custom-checkbox"></div>
               <span className="checkbox-text">
-                I have read and understood the terms and conditions specified above.
+                I have read and understood the research information and consent terms specified above.
               </span>
             </label>
 
@@ -77,7 +76,7 @@ function ConsentPage() {
               />
               <div className="custom-checkbox"></div>
               <span className="checkbox-text">
-                I agree to provide my consent for my data to be used in accordance with specifications.
+                I voluntarily agree to participate in this research study and consent to the use of my anonymized data for research purposes.
               </span>
             </label>
           </div>
