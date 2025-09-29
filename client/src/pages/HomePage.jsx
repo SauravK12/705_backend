@@ -15,14 +15,15 @@ function HomePage() {
       <div className="content-container">
         <main className="main-content">
           <h1 className="headline">
-            Quote about student mental well-being.
+            Understanding Student Mental Health and Well-being
           </h1>
           
           <p className="subtext">
-            Also with subtle consideration to reference bias and educational policy making.
+            Your participation in this research helps us better understand the mental health challenges 
+            faced by students and contributes to developing better support systems.
           </p>
           
-          <Link to="/consent" className="cta-link">
+          <Link to="/summary" className="cta-link">
             <button className="cta-button" aria-label="Start the survey">
               Take the survey &gt;&gt;
             </button>
