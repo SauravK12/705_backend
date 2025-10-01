@@ -1,0 +1,7 @@
+export {default as HomePage} from './HomePage'
+export {default as ConsentPage} from './ConsentPage'
+export {default as QuestionnairePage} from './QuestionnairePage'
+export {default as SummaryPage} from './SummaryPage'
+export {default as CompletionPage} from './CompletionPage'
+export {default as ErrorPage} from './ErrorPage'
+export {default as Root} from './Root'
