@@ -7,6 +7,7 @@ import time
 import torch
 from PIL import Image
 from torchvision import transforms
+from moviepy import VideoFileClip
 
 # Sub functions
 def pth_processing(fp):
@@ -97,6 +98,10 @@ def display_FPS(img, text, margin=1.0, box_scale=1.0):
 				bottomLeftOrigin=False)
 	return img
 
+def convert_mp4_to_gif(input_path, output_path, fps=10):
+    clip = VideoFileClip(input_path)
+    clip.write_gif(output_path, fps=fps)
+
 # Main logic (webcam demo)
 if __name__ == "__main__":
 	mp_face_mesh = mp.solutions.face_mesh
@@ -143,3 +148,7 @@ if __name__ == "__main__":
 		vid_writer.release()
 		cap.release()
 		cv2.destroyAllWindows()
+
+	input_video_path = "result.mp4"
+	output_gif_path = "result.gif"
+	convert_mp4_to_gif(input_video_path, output_gif_path)
