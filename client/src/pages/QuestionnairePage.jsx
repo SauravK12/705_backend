@@ -9,6 +9,7 @@ function QuestionnairePage() {
   const [answers, setAnswers] = useState({});
   const [showQuitModal, setShowQuitModal] = useState(false);
   const streamRef = useRef(null);
+  const answerScores = [5,4,3,2,1];
   
   // Mock data - REPLACE THIS WITH API CALL
   // TODO: Replace with useEffect API call like:
@@ -146,7 +147,7 @@ function QuestionnairePage() {
       question: "How often do you feel unbothered about unexpected events?",
       options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
     }
-
+    
   ]);
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -195,9 +196,27 @@ function QuestionnairePage() {
     }
   };
 
+  //get scores from final answers
+  const getScores = (finalAnswers) => {
+    var q,qo,o_index,s,scoreList;
+    scoreList = [];
+    for(let i=0; i<finalAnswers.length; i++){
+      q = questions[i];
+      qo = q['options'];
+      o_index = qo.findIndex(finalAnswers[i]);
+      s = answerScores[o_index];
+      scoreList.push(s);
+    }
+    return scoreList;
+  }
+
   const submitSurvey = async (finalAnswers) => {
     // Stop the camera before submitting
     stopCamera();
+
+    //print list of scores in console
+    const finalScores = getScores(finalAnswers);
+    console.log('Survey submitted with scores:', finalScores);
 
     // TODO: Replace with actual API call
     // try {
