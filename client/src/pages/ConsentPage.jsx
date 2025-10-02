@@ -20,7 +20,7 @@ function ConsentPage() {
   const handleStartSurvey = () => {
     const isFormValid = consents.termsAccepted && consents.dataConsent;
     if (isFormValid) {
-      navigate('/questionnaire');
+      navigate('/facecam-preview');
     }
   };
 
