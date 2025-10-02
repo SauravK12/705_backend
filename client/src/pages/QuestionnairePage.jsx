@@ -1,14 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './QuestionnairePage.css';
 
 function QuestionnairePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [answers, setAnswers] = useState({});
   const [showQuitModal, setShowQuitModal] = useState(false);
-  const streamRef = useRef(null);
+  const videoRef = useRef(null);
+  const [stream, setStream] = useState(null);
+
+  // Initialize with existing answers if coming from review page
+  useEffect(() => {
+    if (location.state?.answers) {
+      setAnswers(location.state.answers);
+    }
+  }, [location.state]);
   
   // Mock data - REPLACE THIS WITH API CALL
   // TODO: Replace with useEffect API call like:
@@ -55,30 +64,48 @@ function QuestionnairePage() {
   const totalQuestions = questions.length;
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
-  // Initialize camera on mount
+  // Initialize camera on mount - only if no stream exists
   useEffect(() => {
     const initCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: false
         });
-        streamRef.current = stream;
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
       } catch (error) {
         console.error('Camera access error:', error);
       }
     };
 
-    initCamera();
+    if (!stream) {
+      initCamera();
+    }
 
     // Cleanup function to stop camera when component unmounts
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update video element when stream changes
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
 
   // Load saved answer for current question
   useEffect(() => {
@@ -90,36 +117,19 @@ function QuestionnairePage() {
     setSelectedAnswer(value);
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
+
 
   const submitSurvey = async (finalAnswers) => {
-    // Stop the camera before submitting
+    // Stop the camera before going to review page
     stopCamera();
 
-    // TODO: Replace with actual API call
-    // try {
-    //   const response = await fetch('/api/survey/submit', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ answers: finalAnswers })
-    //   });
-    //   if (response.ok) {
-    //     navigate('/completion');
-    //   }
-    // } catch (error) {
-    //   console.error('Error submitting survey:', error);
-    // }
-
-    // For now, just log the answers and navigate
-    console.log('Survey submitted with answers:', finalAnswers);
-    navigate('/completion');
+    // Navigate to review page with answers and questions data
+    navigate('/review', { 
+      state: { 
+        answers: finalAnswers,
+        questions: questions
+      } 
+    });
   };
 
   const handleNext = () => {
@@ -185,41 +195,60 @@ function QuestionnairePage() {
 
         {/* Question Section */}
         <div className="question-section">
-          <div className="question-number">
-            {currentQuestionIndex + 1}
+          <div className="question-header">
+            <div className="question-number">
+              {currentQuestionIndex + 1}
+            </div>
+            <h2 className="question-title">Question {currentQuestionIndex + 1}: {currentQuestion.category}</h2>
           </div>
-          <h2 className="question-title">Question {currentQuestionIndex + 1}: {currentQuestion.category}</h2>
           <p className="question-text">
             {currentQuestion.question}
           </p>
         </div>
 
-        {/* Answer Options */}
+        {/* Answer Options with Camera */}
         <div className="answer-section">
-          <div className="radio-options">
-            {currentQuestion.options.map((option, index) => (
-              <label key={index} className="radio-container">
-                <input
-                  type="radio"
-                  name={`question-${currentQuestion.id}`}
-                  value={option}
-                  checked={selectedAnswer === option}
-                  onChange={() => handleAnswerChange(option)}
-                  className="radio-input"
-                />
-                <div className="custom-radio"></div>
-                <span className="radio-label">{option}</span>
-              </label>
-            ))}
+          {/* Camera View */}
+          <div className="camera-section">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="camera-video"
+            />
+            <div className="camera-overlay">
+              <div className="camera-frame"></div>
+            </div>
+          </div>
+
+          {/* Multiple Choice Options */}
+          <div className="options-section">
+            <div className="radio-options">
+              {currentQuestion.options.map((option, index) => (
+                <label key={index} className="radio-container">
+                  <input
+                    type="radio"
+                    name={`question-${currentQuestion.id}`}
+                    value={option}
+                    checked={selectedAnswer === option}
+                    onChange={() => handleAnswerChange(option)}
+                    className="radio-input"
+                  />
+                  <div className="custom-radio"></div>
+                  <span className="radio-label">{option}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="navigation-section">
+        {/* Navigation Buttons - Bottom of page */}
+        <div className="bottom-navigation">
           {currentQuestionIndex > 0 && (
             <button 
               onClick={handlePrevious}
-              className="previous-button"
+              className="previous-button-bottom"
             >
               ← Previous
             </button>
@@ -228,7 +257,7 @@ function QuestionnairePage() {
           <button 
             onClick={handleNext}
             disabled={!isAnswered}
-            className={`next-button ${isAnswered ? 'enabled' : 'disabled'}`}
+            className={`next-button-bottom ${isAnswered ? 'enabled' : 'disabled'}`}
           >
             {isLastQuestion ? 'Submit Survey' : 'Next →'}
           </button>

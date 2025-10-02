@@ -13,9 +13,10 @@ function FacecamPreviewPage() {
     requestCameraAccess();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      // Don't stop camera when navigating to questionnaire
+      // if (stream) {
+      //   stream.getTracks().forEach(track => track.stop());
+      // }
     };
   }, []);
 

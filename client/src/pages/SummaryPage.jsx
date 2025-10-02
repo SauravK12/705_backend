@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './SummaryPage.css';
+import questionnairePreview from '../assets/questionnaire-preview.png';
 
 function SummaryPage() {
   return (
@@ -11,6 +12,15 @@ function SummaryPage() {
         </Link>
         
         <h1 className="summary-title">About this survey...</h1>
+        
+        {/* Questionnaire Preview Image */}
+        <div className="preview-section">
+          <img 
+            src={questionnairePreview} 
+            alt="Questionnaire preview showing camera view and multiple choice questions" 
+            className="questionnaire-preview-image"
+          />
+        </div>
         
         <p className="summary-text">
           This survey is designed to understand the mental health and well-being of university students. 
