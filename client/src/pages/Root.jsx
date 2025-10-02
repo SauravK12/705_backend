@@ -1,15 +1,12 @@
 import { Outlet } from 'react-router-dom';
+import './Root.css';
 
 function Root() {
   return (
-    <div>
-      <header>
-        <h1>root layout stuff to go here</h1>
-      </header>
-      
-      <div id="detail">
-        <Outlet /> {/* Child routes render here */}
-      </div>
+    <div className="app-shell">
+      <main className="app-content">
+        <Outlet />
+      </main>
     </div>
   );
 }
