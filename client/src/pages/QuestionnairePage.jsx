@@ -9,6 +9,15 @@ function QuestionnairePage() {
   const [answers, setAnswers] = useState({});
   const [showQuitModal, setShowQuitModal] = useState(false);
   const streamRef = useRef(null);
+  const videoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const canvasRef = useRef(null);
+  const emotionIntervalRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState(null);
+  const [emotionData, setEmotionData] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
   
   // Mock data - REPLACE THIS WITH API CALL
   // TODO: Replace with useEffect API call like:
@@ -64,6 +73,11 @@ function QuestionnairePage() {
           audio: false
         });
         streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        // Start recording when camera initializes
+        startRecording(stream);
       } catch (error) {
         console.error('Camera access error:', error);
       }
@@ -73,9 +87,13 @@ function QuestionnairePage() {
 
     // Cleanup function to stop camera when component unmounts
     return () => {
+      stopRecordingAndSave();
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
+      }
+      if (emotionIntervalRef.current) {
+        clearInterval(emotionIntervalRef.current);
       }
     };
   }, []);
@@ -88,6 +106,140 @@ function QuestionnairePage() {
 
   const handleAnswerChange = (value) => {
     setSelectedAnswer(value);
+  };
+
+  // Start recording video
+  const startRecording = (stream) => {
+    try {
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      });
+
+      recordedChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start(100); // Collect data every 100ms
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+
+      // Start emotion detection interval (every 500ms)
+      emotionIntervalRef.current = setInterval(() => {
+        captureAndAnalyzeFrame();
+      }, 500);
+
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+
+  // Capture frame and send to API for emotion detection
+  const captureAndAnalyzeFrame = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas to base64
+    const imageData = canvas.toDataURL('image/jpeg');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/analyze-frame', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageData })
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.faces && result.faces.length > 0) {
+        const emotion = result.faces[0].emotion;
+        setCurrentEmotion(emotion);
+        setEmotionData(prev => [...prev, {
+          timestamp: Date.now(),
+          emotion: emotion,
+          confidence: result.faces[0].confidence
+        }]);
+      }
+    } catch (error) {
+      console.error('Error analyzing frame:', error);
+    }
+  };
+
+  // Stop recording and save video
+  const stopRecordingAndSave = async () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+
+      if (emotionIntervalRef.current) {
+        clearInterval(emotionIntervalRef.current);
+      }
+
+      // Wait a bit for final data to be collected
+      setTimeout(async () => {
+        await saveVideoWithEmotion();
+        // Clear for next question
+        recordedChunksRef.current = [];
+        setEmotionData([]);
+      }, 200);
+    }
+  };
+
+  // Save video with emotion data
+  const saveVideoWithEmotion = async () => {
+    if (recordedChunksRef.current.length === 0) return;
+
+    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+
+    // Calculate dominant emotion
+    const emotionCounts = {};
+    emotionData.forEach(item => {
+      emotionCounts[item.emotion] = (emotionCounts[item.emotion] || 0) + 1;
+    });
+
+    const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) =>
+      emotionCounts[a] > emotionCounts[b] ? a : b, 'Unknown'
+    );
+
+    const formData = new FormData();
+    formData.append('video', blob, `question_${currentQuestion.id}_${dominantEmotion}.webm`);
+    formData.append('questionId', currentQuestion.id);
+    formData.append('emotion', dominantEmotion);
+    formData.append('emotionData', JSON.stringify(emotionData));
+
+    // Include session ID if we have one
+    if (sessionId) {
+      formData.append('sessionId', sessionId);
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/save-question-video', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      console.log('Video saved:', result);
+
+      // Store session ID for subsequent requests
+      if (result.sessionId && !sessionId) {
+        setSessionId(result.sessionId);
+      }
+    } catch (error) {
+      console.error('Error saving video:', error);
+    }
   };
 
   const stopCamera = () => {
@@ -122,7 +274,7 @@ function QuestionnairePage() {
     navigate('/completion');
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Save current answer
     const updatedAnswers = {
       ...answers,
@@ -130,8 +282,17 @@ function QuestionnairePage() {
     };
     setAnswers(updatedAnswers);
 
+    // Stop recording and save video for current question
+    await stopRecordingAndSave();
+
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
+      // Start recording for next question
+      if (streamRef.current) {
+        setTimeout(() => {
+          startRecording(streamRef.current);
+        }, 300);
+      }
     } else {
       // Last question - submit survey
       submitSurvey(updatedAnswers);
@@ -168,12 +329,21 @@ function QuestionnairePage() {
   return (
     <div className="questionnaire-page">
       <div className="questionnaire-container">
-        
+
+        {/* Hidden video and canvas for recording and emotion detection */}
+        <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
         {/* Header with Quit Survey */}
         <div className="questionnaire-header">
           <button onClick={handleQuitClick} className="quit-link">
             ← Quit Survey
           </button>
+          {currentEmotion && (
+            <div className="emotion-indicator">
+              Detected: {currentEmotion}
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}

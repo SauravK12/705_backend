@@ -59,6 +59,27 @@ body:has(.questionnaire-page) {
 .questionnaire-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.emotion-indicator {
+  background: linear-gradient(135deg, #8e7cc3 0%, #9d8bd1 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(142, 124, 195, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .quit-link {

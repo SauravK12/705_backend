@@ -18,13 +18,16 @@ CORS(app)  # Enable CORS for all routes
 # Configuration
 UPLOAD_FOLDER = 'uploads'
 RESULT_FOLDER = 'results'
+QUESTION_VIDEOS_FOLDER = 'question_videos'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'webm'}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
+os.makedirs(QUESTION_VIDEOS_FOLDER, exist_ok=True)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RESULT_FOLDER'] = RESULT_FOLDER
+app.config['QUESTION_VIDEOS_FOLDER'] = QUESTION_VIDEOS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 
 # Initialize model and face mesh
@@ -295,6 +298,62 @@ def download_file(filename):
 def get_emotions():
     """Get list of available emotions"""
     return jsonify({'emotions': list(DICT_EMO.values())})
+
+
+@app.route('/api/save-question-video', methods=['POST'])
+def save_question_video():
+    """Save video recording for a specific question with emotion data"""
+    try:
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file provided'}), 400
+
+        video_file = request.files['video']
+        question_id = request.form.get('questionId')
+        emotion = request.form.get('emotion', 'Unknown')
+        emotion_data = request.form.get('emotionData', '[]')
+        session_id = request.form.get('sessionId')  # Get session ID from client
+
+        if not question_id:
+            return jsonify({'error': 'Question ID is required'}), 400
+
+        # Create or use existing session folder
+        import time
+        import json
+
+        if not session_id:
+            # Create new session if not provided
+            session_id = str(int(time.time()))
+
+        session_folder = os.path.join(app.config['QUESTION_VIDEOS_FOLDER'], session_id)
+        os.makedirs(session_folder, exist_ok=True)
+
+        # Save video file
+        filename = f'question_{question_id}_{emotion}.webm'
+        video_path = os.path.join(session_folder, filename)
+        video_file.save(video_path)
+
+        # Save emotion data to JSON file
+        emotion_filename = f'question_{question_id}_emotions.json'
+        emotion_path = os.path.join(session_folder, emotion_filename)
+
+        with open(emotion_path, 'w') as f:
+            json.dump({
+                'questionId': question_id,
+                'dominantEmotion': emotion,
+                'emotionTimeline': json.loads(emotion_data) if emotion_data else []
+            }, f, indent=2)
+
+        return jsonify({
+            'success': True,
+            'message': 'Video saved successfully',
+            'sessionId': session_id,
+            'videoPath': video_path,
+            'emotionPath': emotion_path,
+            'dominantEmotion': emotion
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
