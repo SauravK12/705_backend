@@ -1,5 +1,6 @@
 export {default as HomePage} from './HomePage'
 export {default as ConsentPage} from './ConsentPage'
+export {default as FacecamPreviewPage} from './FacecamPreviewPage'
 export {default as QuestionnairePage} from './QuestionnairePage'
 export {default as SummaryPage} from './SummaryPage'
 export {default as CompletionPage} from './CompletionPage'

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './QuestionnairePage.css';
 
@@ -8,6 +8,7 @@ function QuestionnairePage() {
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [answers, setAnswers] = useState({});
   const [showQuitModal, setShowQuitModal] = useState(false);
+  const streamRef = useRef(null);
   
   // Mock data - REPLACE THIS WITH API CALL
   // TODO: Replace with useEffect API call like:
@@ -54,6 +55,31 @@ function QuestionnairePage() {
   const totalQuestions = questions.length;
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
+  // Initialize camera on mount
+  useEffect(() => {
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+        streamRef.current = stream;
+      } catch (error) {
+        console.error('Camera access error:', error);
+      }
+    };
+
+    initCamera();
+
+    // Cleanup function to stop camera when component unmounts
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []);
+
   // Load saved answer for current question
   useEffect(() => {
     const savedAnswer = answers[currentQuestion?.id] || '';
@@ -64,7 +90,17 @@ function QuestionnairePage() {
     setSelectedAnswer(value);
   };
 
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
   const submitSurvey = async (finalAnswers) => {
+    // Stop the camera before submitting
+    stopCamera();
+
     // TODO: Replace with actual API call
     // try {
     //   const response = await fetch('/api/survey/submit', {
@@ -80,7 +116,7 @@ function QuestionnairePage() {
     // } catch (error) {
     //   console.error('Error submitting survey:', error);
     // }
-    
+
     // For now, just log the answers and navigate
     console.log('Survey submitted with answers:', finalAnswers);
     navigate('/completion');
@@ -117,6 +153,7 @@ function QuestionnairePage() {
   };
 
   const handleQuitConfirm = () => {
+    stopCamera();
     navigate('/');
   };
 

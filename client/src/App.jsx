@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { HomePage, SummaryPage, QuestionnairePage, ConsentPage, CompletionPage, ErrorPage, Root } from './pages'
+import { HomePage, SummaryPage, QuestionnairePage, ConsentPage, FacecamPreviewPage, CompletionPage, ErrorPage, Root } from './pages'
 
 
 const router = createBrowserRouter([
@@ -23,8 +23,12 @@ const router = createBrowserRouter([
         element: <QuestionnairePage />,
       },
       {
-        path: "consent", 
+        path: "consent",
         element: <ConsentPage />,
+      },
+      {
+        path: "facecam-preview",
+        element: <FacecamPreviewPage />,
       },
       {
         path: "completion",
