@@ -17,7 +17,24 @@ function ReviewPage() {
     }
   }, [location.state, answers, navigate]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // TODO: Replace with actual API call
+    // try {
+    //   const response = await fetch('/api/survey/submit', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({ answers: answers })
+    //   });
+    //   if (response.ok) {
+    //     navigate('/completion');
+    //   }
+    // } catch (error) {
+    //   console.error('Error submitting survey:', error);
+    // }
+
+    // For now, just log the answers and navigate
     console.log('Survey submitted with answers:', answers);
     navigate('/completion');
   };

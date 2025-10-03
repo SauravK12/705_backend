@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './QuestionnairePage.css';
 
 function QuestionnairePage() {
@@ -18,6 +18,7 @@ function QuestionnairePage() {
   const [currentEmotion, setCurrentEmotion] = useState(null);
   const [emotionData, setEmotionData] = useState([]);
   const [sessionId, setSessionId] = useState(null);
+  const location = useLocation();
   
   // Mock data - REPLACE THIS WITH API CALL
   // TODO: Replace with useEffect API call like:
@@ -160,6 +161,13 @@ function QuestionnairePage() {
   const currentQuestion = questions[currentQuestionIndex];
   const totalQuestions = questions.length;
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+
+  // Initialize with existing answers if coming from review page
+  useEffect(() => {
+    if (location.state?.answers) {
+      setAnswers(location.state.answers);
+    }
+  }, [location.state]);
 
   // Initialize camera on mount
   useEffect(() => {
@@ -347,28 +355,16 @@ function QuestionnairePage() {
   };
 
   const submitSurvey = async (finalAnswers) => {
-    // Stop the camera before submitting
+    // Stop the camera before going to review page
     stopCamera();
 
-    // TODO: Replace with actual API call
-    // try {
-    //   const response = await fetch('/api/survey/submit', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ answers: finalAnswers })
-    //   });
-    //   if (response.ok) {
-    //     navigate('/completion');
-    //   }
-    // } catch (error) {
-    //   console.error('Error submitting survey:', error);
-    // }
-
-    // For now, just log the answers and navigate
-    console.log('Survey submitted with answers:', finalAnswers);
-    navigate('/completion');
+    // Navigate to review page with answers and questions data
+    navigate('/review', { 
+      state: { 
+        answers: finalAnswers,
+        questions: questions
+      } 
+    });
   };
 
   const handleNext = async () => {
@@ -427,8 +423,7 @@ function QuestionnairePage() {
     <div className="questionnaire-page">
       <div className="questionnaire-container">
 
-        {/* Hidden video and canvas for recording and emotion detection */}
-        <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
+        {/* Hidden canvas for emotion detection */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
         {/* Header with Quit Survey */}
@@ -452,41 +447,60 @@ function QuestionnairePage() {
 
         {/* Question Section */}
         <div className="question-section">
-          <div className="question-number">
-            {currentQuestionIndex + 1}
+          <div className="question-header">
+            <div className="question-number">
+              {currentQuestionIndex + 1}
+            </div>
+            <h2 className="question-title">Question {currentQuestionIndex + 1}: {currentQuestion.category}</h2>
           </div>
-          <h2 className="question-title">Question {currentQuestionIndex + 1}: {currentQuestion.category}</h2>
           <p className="question-text">
             {currentQuestion.question}
           </p>
         </div>
 
-        {/* Answer Options */}
+        {/* Answer Options with Camera */}
         <div className="answer-section">
-          <div className="radio-options">
-            {currentQuestion.options.map((option, index) => (
-              <label key={index} className="radio-container">
-                <input
-                  type="radio"
-                  name={`question-${currentQuestion.id}`}
-                  value={option}
-                  checked={selectedAnswer === option}
-                  onChange={() => handleAnswerChange(option)}
-                  className="radio-input"
-                />
-                <div className="custom-radio"></div>
-                <span className="radio-label">{option}</span>
-              </label>
-            ))}
+          {/* Camera View */}
+          <div className="camera-section">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="camera-video"
+            />
+            <div className="camera-overlay">
+              <div className="camera-frame"></div>
+            </div>
+          </div>
+
+          {/* Multiple Choice Options */}
+          <div className="options-section">
+            <div className="radio-options">
+              {currentQuestion.options.map((option, index) => (
+                <label key={index} className="radio-container">
+                  <input
+                    type="radio"
+                    name={`question-${currentQuestion.id}`}
+                    value={option}
+                    checked={selectedAnswer === option}
+                    onChange={() => handleAnswerChange(option)}
+                    className="radio-input"
+                  />
+                  <div className="custom-radio"></div>
+                  <span className="radio-label">{option}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="navigation-section">
+        {/* Navigation Buttons - Bottom of page */}
+        <div className="bottom-navigation">
           {currentQuestionIndex > 0 && (
             <button 
               onClick={handlePrevious}
-              className="previous-button"
+              className="previous-button-bottom"
             >
               ← Previous
             </button>
@@ -495,7 +509,7 @@ function QuestionnairePage() {
           <button 
             onClick={handleNext}
             disabled={!isAnswered}
-            className={`next-button ${isAnswered ? 'enabled' : 'disabled'}`}
+            className={`next-button-bottom ${isAnswered ? 'enabled' : 'disabled'}`}
           >
             {isLastQuestion ? 'Submit Survey' : 'Next →'}
           </button>
