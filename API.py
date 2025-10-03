@@ -328,7 +328,7 @@ def save_question_video():
         os.makedirs(session_folder, exist_ok=True)
 
         # Save video file
-        filename = f'question_{question_id}_{emotion}.webm'
+        filename = f'question_{question_id}_{emotion}.mp4'
         video_path = os.path.join(session_folder, filename)
         video_file.save(video_path)
 
