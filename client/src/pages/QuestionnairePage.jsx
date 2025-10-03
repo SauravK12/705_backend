@@ -20,34 +20,131 @@ function QuestionnairePage() {
   // }, []);
   const [questions] = useState([
     {
+      //Satisfaction
       id: 1,
-      category: "Academic Stress",
-      question: "Over the last two weeks, how often have you felt overwhelmed by your academic workload?",
-      options: ["Never", "Rarely", "Sometimes", "Often", "Very often"]
+      category: "Satisfaction",
+      question: "How in touch are you with your positive emotions?",
+      options: ["Extremely in touch", "In touch", "Neutral", "Out of touch", "Extremely out of touch"]
     },
     {
       id: 2,
-      category: "Sleep Quality",
-      question: "How would you rate the quality of your sleep over the past two weeks?",
-      options: ["Very poor", "Poor", "Fair", "Good", "Excellent"]
+      category: "Satisfaction",
+      question: "How much do you trust your skills and capabilities?",
+      options: ["Full trust", "Lots of trust", "Neutral", "Little trust", "No trust"]
     },
     {
       id: 3,
-      category: "Social Support",
-      question: "How often do you feel you have adequate social support from friends and family?",
-      options: ["Never", "Rarely", "Sometimes", "Often", "Always"]
+      category: "Satisfaction",
+      question: "How satisfied are you with the support you get from your friends?",
+      options: ["Extremely satisfied", "Satisfied", "Neutral", "Dissatisfied", "Extremely dissatisfied"]
     },
     {
       id: 4,
-      category: "Anxiety",
-      question: "Over the last two weeks, have you felt nervous, anxious, or on edge?",
-      options: ["Not at all", "Rarely", "Sometimes", "Most of the time", "All the time"]
+      category: "Satisfaction",
+      question: "How satisfied are you with the support you get from your family?",
+      options: ["Extremely satisfied", "Satisfied", "Neutral", "Dissatisfied", "Extremely dissatisfied"]
     },
     {
       id: 5,
-      category: "Mood",
-      question: "How often have you felt down, depressed, or hopeless during the past two weeks?",
-      options: ["Not at all", "Several days", "More than half the days", "Nearly every day", "Every day"]
+      category: "Satisfaction",
+      question: "How often do you positively think of the future?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+
+    //Self-Management
+    {
+      id: 6,
+      category: "Self-Management",
+      question: "How would you rate your ability to deal with personal problems?",
+      options: ["Very good", "Good", "Fair", "Poor", "Very poor"]
+    },
+    {
+      id: 7,
+      category: "Self-Management",
+      question: "How would you rate your ability to organize your thoughts?",
+      options: ["Very good", "Good", "Fair", "Poor", "Very poor"]
+    },
+    {
+      id: 8,
+      category: "Self-Management",
+      question: "How much control do you feel you have on important aspects of your life?",
+      options: ["Full control", "Lots of control", "Neutral", "Little control", "No control"]
+    },
+
+    //Quality Rest
+    {
+      id: 9,
+      category: "Quality Rest",
+      question: "How in touch are you with your inner peace?",
+      options: ["Extremely in touch", "In touch", "Neutral", "Out of touch", "Extremely out of touch"]
+    },
+    {
+      id: 10,
+      category: "Quality Rest",
+      question: "How often do you sleep 7-9 hours a day?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+    {
+      id: 11,
+      category: "Quality Rest",
+      question: "How often are you able to focus or concentrate on something?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+    {
+      id: 12,
+      category: "Quality Rest",
+      question: "How often do you plan ahead to avoid stressful situations?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+    {
+      id: 13,
+      category: "Quality Rest",
+      question: "How often do you prioritize doing tasks, and thinking of a solution, instead of letting stress and emotions affect you?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+    {
+      id: 14,
+      category: "Quality Rest",
+      question: "How often do you take a much needed break, instead of letting stress and emotions affect you?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+
+    //Productivity
+    {
+      id: 15,
+      category: "Productivity",
+      question: "How much do you enjoy your daily routine?",
+      options: ["Extremely satisfied", "Satisfied", "Neutral", "Dissatisfied", "Extremely dissatisfied"]
+    },
+    {
+      id: 16,
+      category: "Productivity",
+      question: "How much do you feel unbothered about daily challenges?",
+      options: ["Extremely unbothered", "Unbothered", "Neutral", "Bothered", "Extremely bothered"]
+    },
+    {
+      id: 17,
+      category: "Productivity",
+      question: "How much time do you spend on leisurely activities?",
+      options: ["All the time", "Most of the time", "About half of the time", "Some of the time", "None of the time"]
+    },
+    {
+      id: 18,
+      category: "Productivity",
+      question: "How much time do you spend on quality time with friends and family?",
+      options: ["All the time", "Most of the time", "About half of the time", "Some of the time", "None of the time"]
+    },
+    {
+      id: 19,
+      category: "Productivity",
+      question: "How often are you free from situations under time pressure?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
+    },
+    {
+      id: 20,
+      category: "Productivity",
+      question: "How often do you feel unbothered about unexpected events?",
+      options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
     }
   ]);
 
