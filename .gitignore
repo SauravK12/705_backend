@@ -256,3 +256,4 @@ Temporary Items
 # Ignore generated video and gif files
 result.mp4
 result.gif
+results/
