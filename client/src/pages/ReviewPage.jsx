@@ -18,25 +18,36 @@ function ReviewPage() {
   }, [location.state, answers, navigate]);
 
   const handleSubmit = async () => {
-    // TODO: Replace with actual API call
-    // try {
-    //   const response = await fetch('/api/survey/submit', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ answers: answers })
-    //   });
-    //   if (response.ok) {
-    //     navigate('/completion');
-    //   }
-    // } catch (error) {
-    //   console.error('Error submitting survey:', error);
-    // }
-
-    // For now, just log the answers and navigate
-    console.log('Survey submitted with answers:', answers);
-    navigate('/completion');
+    // Try to get sessionId from any answer object (if present)
+    let sessionId = null;
+    if (answers.sessionId) {
+      sessionId = answers.sessionId;
+    } else if (location.state?.sessionId) {
+      sessionId = location.state.sessionId;
+    }
+    try {
+      const response = await fetch('http://localhost:5000/api/save-survey-answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: sessionId,
+          answers: answers
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Survey answers saved:', result);
+        navigate('/completion');
+      } else {
+        const error = await response.json();
+        alert('Error submitting survey: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error submitting survey:', error);
+      alert('Error submitting survey: ' + error.message);
+    }
   };
 
   const handleEditClick = () => {
