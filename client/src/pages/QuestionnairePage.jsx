@@ -21,6 +21,8 @@ function QuestionnairePage() {
   const [emotionData, setEmotionData] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const location = useLocation();
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  
 
   // CRITICAL FIX: Store question ID when recording starts
   const recordingQuestionIdRef = useRef(null);
