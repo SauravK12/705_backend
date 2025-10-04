@@ -103,18 +103,10 @@ body:has(.questionnaire-page) {
   margin: 5px 0;
 }
 
-.answer-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 8px 0 5px 0;
-  gap: 30px;
-}
-
 /* Camera Section */
 .camera-section {
   position: relative;
-  width: 250px;
+  width: 40%;
   height: 250px;
   flex-shrink: 0;
 }
@@ -217,7 +209,7 @@ body:has(.questionnaire-page) {
 .answer-section {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding: 8px 0 5px 0;
   gap: 30px;
 }
@@ -225,7 +217,7 @@ body:has(.questionnaire-page) {
 /* Camera Section */
 .camera-section {
   position: relative;
-  width: 250px;
+  width: 40%;
   height: 250px;
   flex-shrink: 0;
 }
@@ -299,7 +291,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 252px;
+    width: 40%;
     height: 252px;
   }
   
@@ -343,7 +335,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 220px;
+    width: 40%;
     height: 220px;
   }
   
@@ -381,7 +373,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 320px;
+    width: 40%;
     height: 320px;
   }
   
@@ -404,7 +396,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 250px;
+    width: 40%;
     height: 250px;
   }
   
@@ -669,7 +661,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 200px;
+    width: 40%;
     height: 200px;
   }
   
@@ -725,7 +717,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 252px;
+    width: 40%;
     height: 252px;
   }
   
@@ -769,7 +761,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 220px;
+    width: 40%;
     height: 220px;
   }
   
