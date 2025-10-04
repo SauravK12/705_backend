@@ -163,45 +163,12 @@ function QuestionnairePage() {
     setSelectedAnswer(savedAnswer);
   }, [currentQuestionIndex, answers, currentQuestion]);
 
-  const handleAnswerChange = (value) => {
-    setSelectedAnswer(value);
-  };
 
   const handleCameraToggle = (isOn) => {
     setIsCameraOn(isOn);
   }
 
 
-  // Start recording video
-  const startRecording = (stream) => {
-    try {
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
-
-      recordedChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.start(100); // Collect data every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-
-      // Start emotion detection interval (every 500ms)
-      emotionIntervalRef.current = setInterval(() => {
-        captureAndAnalyzeFrame();
-      }, 500);
-
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
-  };
-
-  // Capture frame and send to API for emotion detection
   const captureAndAnalyzeFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
