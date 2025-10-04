@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './QuestionnairePage.css';
+import CameraSwitch from '../components/Switch';
 
 function QuestionnairePage() {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ function QuestionnairePage() {
   const [emotionData, setEmotionData] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const location = useLocation();
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  
 
   // CRITICAL FIX: Store question ID when recording starts
   const recordingQuestionIdRef = useRef(null);
@@ -161,6 +164,12 @@ function QuestionnairePage() {
     const savedAnswer = answers[currentQuestion?.id] || '';
     setSelectedAnswer(savedAnswer);
   }, [currentQuestionIndex, answers, currentQuestion]);
+
+
+  const handleCameraToggle = (isOn) => {
+    setIsCameraOn(isOn);
+  }
+
 
   const captureAndAnalyzeFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -573,16 +582,40 @@ function QuestionnairePage() {
         </div>
 
         <div className="answer-section">
-          <div className="camera-section">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="camera-video"
-            />
-            <div className="camera-overlay">
-              <div className="camera-frame"></div>
+          {/* Camera View */}
+          <div className="camera-op-container">
+            <div className="camera-section">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="camera-video"
+                style={{ 
+                  display: isCameraOn ? 'block' : 'none',
+                  position: isCameraOn ? 'relative' : 'absolute',
+                  visibility: isCameraOn ? 'visible' : 'hidden'
+                }}
+              />
+              {isCameraOn && (
+                <div className="camera-overlay">
+                  <div className="camera-frame"></div>
+                </div>
+              )}
+              
+              {!isCameraOn && (
+                <div className="camera-off-overlay">
+                  <div className="camera-off-message">
+                    <p>Camera display hidden. Recording will continue in the background.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="switch-container">
+              <CameraSwitch
+                onCameraToggle={handleCameraToggle}
+                defaultOn={true}
+              />
             </div>
           </div>
 
