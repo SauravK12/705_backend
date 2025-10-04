@@ -73,6 +73,14 @@ body:has(.questionnaire-page) {
   animation: pulse 2s ease-in-out infinite;
 }
 
+.camera-op-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 40%;
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -106,7 +114,7 @@ body:has(.questionnaire-page) {
 /* Camera Section */
 .camera-section {
   position: relative;
-  width: 40%;
+  width: 100%;
   height: 250px;
   flex-shrink: 0;
 }
@@ -208,8 +216,8 @@ body:has(.questionnaire-page) {
 
 .answer-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
+  align-items: flex-start;
   padding: 8px 0 5px 0;
   gap: 30px;
 }
@@ -217,7 +225,7 @@ body:has(.questionnaire-page) {
 /* Camera Section */
 .camera-section {
   position: relative;
-  width: 40%;
+  width: 100%;
   height: 250px;
   flex-shrink: 0;
 }
@@ -229,6 +237,15 @@ body:has(.questionnaire-page) {
   border-radius: 20px;
   background-color: #f0f0f0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.camera-off-message{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  text-align: center;
+  height: 100%;
 }
 
 .camera-overlay {
@@ -291,7 +308,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 252px;
   }
   
@@ -335,7 +352,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 220px;
   }
   
@@ -373,7 +390,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 320px;
   }
   
@@ -396,7 +413,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 250px;
   }
   
@@ -485,7 +502,6 @@ body:has(.questionnaire-page) {
   align-items: center;
   padding: 20px 0 15px 0;
   gap: 20px;
-  margin-top: clamp(16px, 4vh, 40px);
   width: 100%;
 }
 
@@ -661,7 +677,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 200px;
   }
   
@@ -717,7 +733,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 252px;
   }
   
@@ -761,7 +777,7 @@ body:has(.questionnaire-page) {
   }
   
   .camera-section {
-    width: 40%;
+    width: 100%;
     height: 220px;
   }
   
