@@ -10,6 +10,8 @@ from torchvision import transforms
 import base64
 import io
 import os
+import json
+import time
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -300,60 +302,6 @@ def get_emotions():
     return jsonify({'emotions': list(DICT_EMO.values())})
 
 
-@app.route('/api/save-question-video', methods=['POST'])
-def save_question_video():
-    """Save video recording for a specific question with emotion data"""
-    try:
-        if 'video' not in request.files:
-            return jsonify({'error': 'No video file provided'}), 400
-
-        video_file = request.files['video']
-        question_id = request.form.get('questionId')
-        emotion = request.form.get('emotion', 'Unknown')
-        emotion_data = request.form.get('emotionData', '[]')
-        session_id = request.form.get('sessionId')  # Get session ID from client
-
-        if not question_id:
-            return jsonify({'error': 'Question ID is required'}), 400
-
-        # Create or use existing session folder
-        import time
-        import json
-
-        if not session_id:
-            # Create new session if not provided
-            session_id = str(int(time.time()))
-
-        session_folder = os.path.join(app.config['QUESTION_VIDEOS_FOLDER'], session_id)
-        os.makedirs(session_folder, exist_ok=True)
-
-        # Save video file
-        filename = f'question_{question_id}_{emotion}.mp4'
-        video_path = os.path.join(session_folder, filename)
-        video_file.save(video_path)
-
-        # Save emotion data to JSON file
-        emotion_filename = f'question_{question_id}_emotions.json'
-        emotion_path = os.path.join(session_folder, emotion_filename)
-
-        with open(emotion_path, 'w') as f:
-            json.dump({
-                'questionId': question_id,
-                'dominantEmotion': emotion,
-                'emotionTimeline': json.loads(emotion_data) if emotion_data else []
-            }, f, indent=2)
-
-        return jsonify({
-            'success': True,
-            'message': 'Video saved successfully',
-            'sessionId': session_id,
-            'videoPath': video_path,
-            'emotionPath': emotion_path,
-            'dominantEmotion': emotion
-        })
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
     
 @app.route('/api/save-survey-answers', methods=['POST'])
 def save_survey_answers():
@@ -408,6 +356,101 @@ def save_survey_answers():
             'answersPath': answers_path
         })
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/api/save-question-video', methods=['POST'])
+def save_question_video():
+    """Save video recording for a specific question with emotion data"""
+    try:
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file provided'}), 400
+
+        video_file = request.files['video']
+        question_id = request.form.get('questionId')
+        emotion = request.form.get('emotion', 'Unknown')
+        emotion_data = request.form.get('emotionData', '[]')
+        session_id = request.form.get('sessionId')
+        chunk_index = request.form.get('chunkIndex')
+        is_last_chunk = request.form.get('isLastChunk', 'true').lower() == 'true'
+
+        if not question_id:
+            return jsonify({'error': 'Question ID is required'}), 400
+
+        # Generate session ID if not provided
+        if not session_id:
+            session_id = str(int(time.time()))
+
+        # Create session folder
+        session_folder = os.path.join(app.config['QUESTION_VIDEOS_FOLDER'], session_id)
+        os.makedirs(session_folder, exist_ok=True)
+
+        # FIXED: Use consistent .webm extension
+        base_filename = f'question_{question_id}_{emotion}'
+        video_path = os.path.join(session_folder, base_filename + '.webm')
+
+        # Log file size for debugging
+        video_file.seek(0, 2)  # Seek to end
+        file_size = video_file.tell()
+        video_file.seek(0)  # Reset to beginning
+        print(f"Receiving video file: {file_size} bytes for question {question_id}")
+
+        if chunk_index is not None:
+            # Chunked upload - append to file
+            with open(video_path, 'ab') as f:
+                chunk_data = video_file.read()
+                f.write(chunk_data)
+                print(f"Wrote chunk {chunk_index}: {len(chunk_data)} bytes")
+        else:
+            # FIXED: Full file upload - save directly (don't use video_file.save())
+            # This ensures we have full control over the write operation
+            with open(video_path, 'wb') as f:
+                video_data = video_file.read()
+                f.write(video_data)
+                print(f"Wrote complete file: {len(video_data)} bytes")
+
+        # Save emotion JSON when done
+        if is_last_chunk or chunk_index is None:
+            emotion_filename = f'question_{question_id}_emotions.json'
+            emotion_path = os.path.join(session_folder, emotion_filename)
+
+            emotion_timeline = []
+            try:
+                emotion_timeline = json.loads(emotion_data) if emotion_data else []
+            except json.JSONDecodeError:
+                print(f"Warning: Could not parse emotion data: {emotion_data}")
+
+            with open(emotion_path, 'w') as f:
+                json.dump({
+                    'questionId': question_id,
+                    'dominantEmotion': emotion,
+                    'emotionTimeline': emotion_timeline,
+                    'videoSize': os.path.getsize(video_path)  # Add file size for verification
+                }, f, indent=2)
+
+            print(f"Saved emotion data and video (size: {os.path.getsize(video_path)} bytes)")
+
+            return jsonify({
+                'success': True,
+                'message': 'Video saved successfully',
+                'sessionId': session_id,
+                'videoPath': video_path,
+                'dominantEmotion': emotion,
+                'videoSize': os.path.getsize(video_path)
+            })
+
+        # Not last chunk
+        return jsonify({
+            'success': True,
+            'message': f'Chunk {chunk_index} saved',
+            'sessionId': session_id
+        })
+
+    except Exception as e:
+        print(f"Error saving video: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

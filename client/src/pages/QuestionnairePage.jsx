@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './QuestionnairePage.css';
 
 function QuestionnairePage() {
@@ -19,18 +20,12 @@ function QuestionnairePage() {
   const [emotionData, setEmotionData] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const location = useLocation();
-  
-  // Mock data - REPLACE THIS WITH API CALL
-  // TODO: Replace with useEffect API call like:
-  // useEffect(() => {
-  //   fetch('/api/questions')
-  //     .then(res => res.json())
-  //     .then(data => setQuestions(data))
-  //     .catch(err => console.error('Error fetching questions:', err));
-  // }, []);
+
+  // CRITICAL FIX: Store question ID when recording starts
+  const recordingQuestionIdRef = useRef(null);
+
   const [questions] = useState([
     {
-      //Satisfaction
       id: 1,
       category: "Satisfaction",
       question: "How in touch are you with your positive emotions?",
@@ -60,8 +55,6 @@ function QuestionnairePage() {
       question: "How often do you positively think of the future?",
       options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
     },
-
-    //Self-Management
     {
       id: 6,
       category: "Self-Management",
@@ -80,8 +73,6 @@ function QuestionnairePage() {
       question: "How much control do you feel you have on important aspects of your life?",
       options: ["Full control", "Lots of control", "Neutral", "Little control", "No control"]
     },
-
-    //Quality Rest
     {
       id: 9,
       category: "Quality Rest",
@@ -118,8 +109,6 @@ function QuestionnairePage() {
       question: "How often do you take a much needed break, instead of letting stress and emotions affect you?",
       options: ["Always", "Often", "Sometimes", "Rarely", "Never"]
     },
-
-    //Productivity
     {
       id: 15,
       category: "Productivity",
@@ -162,87 +151,17 @@ function QuestionnairePage() {
   const totalQuestions = questions.length;
   const progressPercentage = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
-  // Initialize with existing answers if coming from review page
   useEffect(() => {
     if (location.state?.answers) {
       setAnswers(location.state.answers);
     }
   }, [location.state]);
 
-  // Initialize camera on mount
-  useEffect(() => {
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: false
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        // Start recording when camera initializes
-        startRecording(stream);
-      } catch (error) {
-        console.error('Camera access error:', error);
-      }
-    };
-
-    initCamera();
-
-    // Cleanup function to stop camera when component unmounts
-    return () => {
-      stopRecordingAndSave();
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-      }
-      if (emotionIntervalRef.current) {
-        clearInterval(emotionIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Load saved answer for current question
   useEffect(() => {
     const savedAnswer = answers[currentQuestion?.id] || '';
     setSelectedAnswer(savedAnswer);
   }, [currentQuestionIndex, answers, currentQuestion]);
 
-  const handleAnswerChange = (value) => {
-    setSelectedAnswer(value);
-  };
-
-  // Start recording video
-  const startRecording = (stream) => {
-    try {
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
-      });
-
-      recordedChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.start(100); // Collect data every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-
-      // Start emotion detection interval (every 500ms)
-      emotionIntervalRef.current = setInterval(() => {
-        captureAndAnalyzeFrame();
-      }, 500);
-
-    } catch (error) {
-      console.error('Error starting recording:', error);
-    }
-  };
-
-  // Capture frame and send to API for emotion detection
   const captureAndAnalyzeFrame = async () => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -254,7 +173,6 @@ function QuestionnairePage() {
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert canvas to base64
     const imageData = canvas.toDataURL('image/jpeg');
 
     try {
@@ -282,49 +200,170 @@ function QuestionnairePage() {
     }
   };
 
-  // Stop recording and save video
-  const stopRecordingAndSave = async () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  // FIXED: Accept questionId parameter
+  const startRecording = (stream, questionId) => {
+    try {
+      console.log(`[Q${questionId}] startRecording called`);
+      console.log(`[Q${questionId}] Stream active:`, stream && stream.active);
+      console.log(`[Q${questionId}] Video tracks:`, stream ? stream.getVideoTracks().length : 0);
 
-      if (emotionIntervalRef.current) {
-        clearInterval(emotionIntervalRef.current);
+      // CRITICAL FIX: Ensure any previous recorder is fully stopped and cleared
+      if (mediaRecorderRef.current) {
+        console.log(`[Q${questionId}] WARNING: Previous MediaRecorder still exists, state:`, mediaRecorderRef.current.state);
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          console.log(`[Q${questionId}] Force stopping previous recorder`);
+          mediaRecorderRef.current.stop();
+        }
+        // Remove all event listeners by setting them to null
+        mediaRecorderRef.current.ondataavailable = null;
+        mediaRecorderRef.current.onstop = null;
+        mediaRecorderRef.current.onerror = null;
+        mediaRecorderRef.current = null;
+        console.log(`[Q${questionId}] Previous recorder cleared`);
       }
 
-      // Wait a bit for final data to be collected
-      setTimeout(async () => {
-        await saveVideoWithEmotion();
-        // Clear for next question
-        recordedChunksRef.current = [];
-        setEmotionData([]);
-      }, 200);
+      // Store the question ID for this recording session
+      recordingQuestionIdRef.current = questionId;
+
+      let options = { mimeType: 'video/webm;codecs=vp8,opus' };
+
+      // Fallback if vp8 not supported
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.warn('vp8,opus not supported, trying fallback');
+        options = { mimeType: 'video/webm' };
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
+      console.log(`[Q${questionId}] MediaRecorder created with:`, options.mimeType);
+
+      // Clear any existing chunks
+      recordedChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+          console.log(`[Q${questionId}] Chunk: ${event.data.size} bytes, total: ${recordedChunksRef.current.length}`);
+        } else {
+          console.warn(`[Q${questionId}] Received chunk with 0 size!`);
+        }
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error(`[Q${questionId}] MediaRecorder error:`, event);
+      };
+
+      mediaRecorder.onstop = () => {
+        console.log(`[Q${questionId}] MediaRecorder onstop event fired naturally`);
+      };
+
+      mediaRecorder.start(1000);
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+
+      console.log(`[Q${questionId}] Recording started successfully, state:`, mediaRecorder.state);
+
+      emotionIntervalRef.current = setInterval(() => {
+        captureAndAnalyzeFrame();
+      }, 500);
+
+    } catch (error) {
+      console.error(`[Q${questionId}] Error starting recording:`, error);
     }
   };
 
-  // Save video with emotion data
-  const saveVideoWithEmotion = async () => {
-    if (recordedChunksRef.current.length === 0) return;
+  const stopRecordingAndSave = async () => {
+    console.log('========== stopRecordingAndSave called ==========');
+    console.log('isRecording:', isRecording);
+    console.log('mediaRecorderRef.current:', !!mediaRecorderRef.current);
+    console.log('mediaRecorder state:', mediaRecorderRef.current?.state);
+
+    if (!mediaRecorderRef.current || !isRecording) {
+      console.log('No active recording to stop');
+      return;
+    }
+
+    if (emotionIntervalRef.current) {
+      clearInterval(emotionIntervalRef.current);
+      emotionIntervalRef.current = null;
+    }
+
+    // CRITICAL: Capture the question ID BEFORE stopping
+    const questionIdForThisRecording = recordingQuestionIdRef.current;
+    console.log(`Stopping recording for question ${questionIdForThisRecording}`);
+    console.log(`Current chunks before stop: ${recordedChunksRef.current.length}`);
+
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+
+      recorder.onstop = async () => {
+        console.log(`\n[Q${questionIdForThisRecording}] ===== ONSTOP EVENT FIRED =====`);
+        console.log(`[Q${questionIdForThisRecording}] Recording stopped. Chunks: ${recordedChunksRef.current.length}`);
+        console.log(`[Q${questionIdForThisRecording}] Recorder state: ${recorder.state}`);
+
+        setIsRecording(false);
+
+        // Small delay to ensure all chunks are collected
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        console.log(`[Q${questionIdForThisRecording}] After delay, chunks: ${recordedChunksRef.current.length}`);
+
+        try {
+          // Pass the captured question ID
+          await saveVideoWithEmotion(questionIdForThisRecording);
+          console.log(`[Q${questionIdForThisRecording}] Video saved successfully`);
+        } catch (error) {
+          console.error(`[Q${questionIdForThisRecording}] Error saving video:`, error);
+        }
+
+        recordedChunksRef.current = [];
+        setEmotionData([]);
+        recordingQuestionIdRef.current = null;
+        console.log(`[Q${questionIdForThisRecording}] Cleanup complete\n`);
+        resolve();
+      };
+
+      console.log(`Calling recorder.stop()...`);
+      recorder.stop();
+    });
+  };
+
+  // FIXED: Accept questionId parameter instead of using current state
+  const saveVideoWithEmotion = async (questionId) => {
+    if (recordedChunksRef.current.length === 0) {
+      console.warn(`[Q${questionId}] No recorded chunks to save`);
+      return;
+    }
+
+    console.log(`[Q${questionId}] Creating blob from ${recordedChunksRef.current.length} chunks`);
 
     const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
 
-    // Calculate dominant emotion
+    if (blob.size === 0) {
+      console.error(`[Q${questionId}] Blob has zero size!`);
+      return;
+    }
+
+    console.log(`[Q${questionId}] Blob created: ${blob.size} bytes`);
+
     const emotionCounts = {};
     emotionData.forEach(item => {
       emotionCounts[item.emotion] = (emotionCounts[item.emotion] || 0) + 1;
     });
 
-    const dominantEmotion = Object.keys(emotionCounts).reduce((a, b) =>
-      emotionCounts[a] > emotionCounts[b] ? a : b, 'Unknown'
-    );
+    const dominantEmotion = emotionData.length > 0
+      ? Object.keys(emotionCounts).reduce((a, b) =>
+          emotionCounts[a] > emotionCounts[b] ? a : b
+        )
+      : 'Unknown';
+
+    console.log(`[Q${questionId}] Dominant emotion: ${dominantEmotion} from ${emotionData.length} samples`);
 
     const formData = new FormData();
-    formData.append('video', blob, `question_${currentQuestion.id}_${dominantEmotion}.webm`);
-    formData.append('questionId', currentQuestion.id);
+    formData.append('video', blob, `question_${questionId}_${dominantEmotion}.webm`);
+    formData.append('questionId', questionId.toString());
     formData.append('emotion', dominantEmotion);
     formData.append('emotionData', JSON.stringify(emotionData));
 
-    // Include session ID if we have one
     if (sessionId) {
       formData.append('sessionId', sessionId);
     }
@@ -335,19 +374,36 @@ function QuestionnairePage() {
         body: formData
       });
 
-      const result = await response.json();
-      console.log('Video saved:', result);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      // Store session ID for subsequent requests
+      const result = await response.json();
+      console.log(`[Q${questionId}] Server response:`, result);
+
       if (result.sessionId && !sessionId) {
         setSessionId(result.sessionId);
+        console.log('Session ID set:', result.sessionId);
       }
     } catch (error) {
-      console.error('Error saving video:', error);
+      console.error(`[Q${questionId}] Error saving video:`, error);
+      throw error;
     }
   };
 
   const stopCamera = () => {
+    console.log('Stopping camera');
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+
+    if (emotionIntervalRef.current) {
+      clearInterval(emotionIntervalRef.current);
+      emotionIntervalRef.current = null;
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -355,39 +411,60 @@ function QuestionnairePage() {
   };
 
   const submitSurvey = async (finalAnswers) => {
-    // Stop the camera before going to review page
+    console.log('Submitting survey');
+
+    if (isRecording) {
+      await stopRecordingAndSave();
+    }
+
     stopCamera();
 
-    // Navigate to review page with answers and questions data
-    navigate('/review', { 
-      state: { 
+    navigate('/review', {
+      state: {
         answers: finalAnswers,
-        questions: questions
-      } 
+        questions: questions,
+        sessionId: sessionId
+      }
     });
   };
 
   const handleNext = async () => {
-    // Save current answer
+    const questionId = currentQuestion.id;
+    console.log(`\n========== handleNext called for question ${questionId} ==========`);
+
     const updatedAnswers = {
       ...answers,
-      [currentQuestion.id]: selectedAnswer
+      [questionId]: selectedAnswer
     };
     setAnswers(updatedAnswers);
 
-    // Stop recording and save video for current question
+    console.log(`[Q${questionId}] About to stop and save recording...`);
+    // Stop and save current recording
     await stopRecordingAndSave();
+    console.log(`[Q${questionId}] Recording stopped and saved`);
 
     if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      // Start recording for next question
-      if (streamRef.current) {
-        setTimeout(() => {
-          startRecording(streamRef.current);
-        }, 300);
-      }
+      // Move to next question
+      const nextIndex = currentQuestionIndex + 1;
+      const nextQuestionId = questions[nextIndex].id;
+
+      console.log(`Moving from Q${questionId} to Q${nextQuestionId}`);
+      setCurrentQuestionIndex(nextIndex);
+
+      // Wait for state to update, then start recording with NEW question ID
+      setTimeout(() => {
+        console.log(`\n--- Starting new recording for Q${nextQuestionId} ---`);
+        console.log(`Stream exists:`, !!streamRef.current);
+        console.log(`Stream active:`, streamRef.current?.active);
+
+        if (streamRef.current) {
+          startRecording(streamRef.current, nextQuestionId);
+        } else {
+          console.error(`No stream available for Q${nextQuestionId}!`);
+        }
+      }, 500);
     } else {
-      // Last question - submit survey
+      console.log('Last question - submitting survey');
       submitSurvey(updatedAnswers);
     }
   };
@@ -398,8 +475,9 @@ function QuestionnairePage() {
     }
   };
 
-  const isAnswered = selectedAnswer !== '';
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+  const handleAnswerChange = (value) => {
+    setSelectedAnswer(value);
+  };
 
   const handleQuitClick = (e) => {
     e.preventDefault();
@@ -407,6 +485,7 @@ function QuestionnairePage() {
   };
 
   const handleQuitConfirm = () => {
+    console.log('User quit survey');
     stopCamera();
     navigate('/');
   };
@@ -415,6 +494,46 @@ function QuestionnairePage() {
     setShowQuitModal(false);
   };
 
+  useEffect(() => {
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: true
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        // Start recording with question ID
+        startRecording(stream, questions[0].id);
+      } catch (error) {
+        console.error('Camera access error:', error);
+      }
+    };
+
+    initCamera();
+
+    return () => {
+      console.log('Component unmounting');
+
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+
+      if (emotionIntervalRef.current) {
+        clearInterval(emotionIntervalRef.current);
+      }
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const isAnswered = selectedAnswer !== '';
+  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+
   if (!currentQuestion) {
     return <div>Loading...</div>;
   }
@@ -422,11 +541,8 @@ function QuestionnairePage() {
   return (
     <div className="questionnaire-page">
       <div className="questionnaire-container">
-
-        {/* Hidden canvas for emotion detection */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-        {/* Header with Quit Survey */}
         <div className="questionnaire-header">
           <button onClick={handleQuitClick} className="quit-link">
             ← Quit Survey
@@ -438,14 +554,12 @@ function QuestionnairePage() {
           )}
         </div>
 
-        {/* Progress Bar */}
         <div className="progress-container">
           <div className="progress-bar">
             <div className="progress-fill" style={{width: `${progressPercentage}%`}}></div>
           </div>
         </div>
 
-        {/* Question Section */}
         <div className="question-section">
           <div className="question-header">
             <div className="question-number">
@@ -458,9 +572,7 @@ function QuestionnairePage() {
           </p>
         </div>
 
-        {/* Answer Options with Camera */}
         <div className="answer-section">
-          {/* Camera View */}
           <div className="camera-section">
             <video
               ref={videoRef}
@@ -474,7 +586,6 @@ function QuestionnairePage() {
             </div>
           </div>
 
-          {/* Multiple Choice Options */}
           <div className="options-section">
             <div className="radio-options">
               {currentQuestion.options.map((option, index) => (
@@ -495,18 +606,17 @@ function QuestionnairePage() {
           </div>
         </div>
 
-        {/* Navigation Buttons - Bottom of page */}
         <div className="bottom-navigation">
           {currentQuestionIndex > 0 && (
-            <button 
+            <button
               onClick={handlePrevious}
               className="previous-button-bottom"
             >
               ← Previous
             </button>
           )}
-          
-          <button 
+
+          <button
             onClick={handleNext}
             disabled={!isAnswered}
             className={`next-button-bottom ${isAnswered ? 'enabled' : 'disabled'}`}
@@ -514,10 +624,8 @@ function QuestionnairePage() {
             {isLastQuestion ? 'Submit Survey' : 'Next →'}
           </button>
         </div>
-
       </div>
 
-      {/* Quit Survey Modal */}
       {showQuitModal && (
         <div className="modal-overlay">
           <div className="quit-modal">
@@ -526,13 +634,13 @@ function QuestionnairePage() {
               Once you quit, all your input data will be deleted everywhere. If you take this survey again, you will have to redo your answers.
             </p>
             <div className="modal-buttons">
-              <button 
+              <button
                 onClick={handleQuitCancel}
                 className="cancel-button"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleQuitConfirm}
                 className="quit-confirm-button"
               >
