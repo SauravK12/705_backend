@@ -354,7 +354,61 @@ def save_question_video():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/save-survey-answers', methods=['POST'])
+def save_survey_answers():
+    """Save user's survey answers."""
+    try:
+        import json
+        import time
+        data = request.get_json()
+        session_id = data.get('sessionId')
+        answers = data.get('answers')  # {questionId: answerText}
 
+        # If session_id is missing or empty, use timestamp
+        if not session_id:
+            session_id = str(int(time.time()))
+
+        if not answers or not isinstance(answers, dict):
+            return jsonify({'error': 'Answers must be provided as a dictionary'}), 400
+
+        def map_answer(ans):
+            # 5-point scale, leftmost=5, rightmost=1
+            if ans in ["Always", "Extremely in touch", "Full trust", "Extremely satisfied", "Very good", "All the time", "Extremely unbothered", "Full control"]:
+                return 5
+            elif ans in ["Often", "In touch", "Lots of trust", "Satisfied", "Good", "Most of the time", "Unbothered", "Lots of control"]:
+                return 4
+            elif ans in ["Sometimes", "Neutral", "Fair", "About half of the time", "Neutral"]:
+                return 3
+            elif ans in ["Rarely", "Out of touch", "Little trust", "Dissatisfied", "Poor", "Some of the time", "Bothered", "Little control"]:
+                return 2
+            elif ans in ["Never", "Extremely out of touch", "No trust", "Extremely dissatisfied", "Very poor", "None of the time", "Extremely bothered", "No control"]:
+                return 1
+            else:
+                return None
+
+        int_answers = {str(qid): map_answer(ans) for qid, ans in answers.items()}
+
+        # Create session folder in results if not exists
+        session_folder = os.path.join(app.config['RESULT_FOLDER'], str(session_id))
+        os.makedirs(session_folder, exist_ok=True)
+
+        # Save answers to JSON file
+        answers_path = os.path.join(session_folder, 'survey_answers.json')
+        with open(answers_path, 'w') as f:
+            json.dump({
+                'sessionId': session_id,
+                'answers': int_answers
+            }, f, indent=2)
+
+        return jsonify({
+            'success': True,
+            'message': 'Survey answers saved successfully',
+            'sessionId': session_id,
+            'answersPath': answers_path
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
